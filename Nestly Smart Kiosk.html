@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nestly Smart Kiosk</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#f3f6f4;--bg2:#dfe8e3;--floor:#c9d3ce;--white:#f7f8f7;--green:#0f9d6b;--deep:#075c3f;--ink:#12261d;--glass:rgba(210,235,225,.35);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#1b2622;--bg2:#101915;--floor:#26322d}}
+:root[data-theme="dark"]{--bg1:#1b2622;--bg2:#101915;--floor:#26322d}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;font-family:Outfit,system-ui,sans-serif;color:var(--ink);
+background:linear-gradient(90deg,transparent 0 12%,rgba(255,255,255,.35) 12% 22%,transparent 22% 34%,rgba(255,255,255,.35) 34% 44%,transparent 44%),linear-gradient(var(--bg1),var(--bg2) 70%,var(--floor) 70%);
+display:flex;align-items:center;justify-content:center;padding:24px 12px;overflow-x:hidden}
+.students{position:fixed;bottom:30%;left:0;right:0;height:120px;pointer-events:none;filter:blur(6px);opacity:.35}
+.students i{position:absolute;bottom:0;width:34px;height:100px;border-radius:17px 17px 4px 4px;background:#355;}
+.students i:nth-child(1){left:6%}.students i:nth-child(2){left:14%;height:90px;background:#585}.students i:nth-child(3){right:8%}.students i:nth-child(4){right:17%;height:94px;background:#764}
+.kiosk{position:relative;width:min(980px,100%);background:var(--white);border-radius:22px;box-shadow:0 30px 60px rgba(0,0,0,.25),inset 0 0 0 2px #fff;padding:16px;border-bottom:10px solid var(--green)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 14px;gap:12px;flex-wrap:wrap}
+.logo{font-size:2.2rem;font-weight:700;color:var(--green);text-shadow:0 0 18px rgba(15,157,107,.55);letter-spacing:.5px}
+.tag{font-size:.95rem;color:#3d5a4d;font-weight:500}
+.body{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+.glass{background:linear-gradient(135deg,rgba(255,255,255,.7),var(--glass));border:3px solid #dfe5e2;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:inset 0 0 30px rgba(15,157,107,.1)}
+.shelf{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-bottom:8px;border-bottom:5px solid #cfd8d3}
+.shelf:last-child{border-bottom:0;padding-bottom:0}
+.item{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:8px 2px;border-radius:10px;font-size:.78rem;line-height:1.25;color:var(--ink);transition:background .15s}
+.item:hover,.item:focus-visible{background:rgba(15,157,107,.18);outline:2px solid var(--green)}
+.item b{display:block;font-size:2rem;font-weight:400}
+.item span{color:var(--deep);font-weight:700}
+.panel{background:#0c1f17;color:#e8f6ef;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;border:3px solid #cfd8d3}
+.panel h2{margin:0;font-size:1rem;font-weight:500;color:#9fe0c3}
+#cart{list-style:none;margin:0;padding:0;font-size:.85rem;min-height:70px;max-height:110px;overflow:auto}
+#cart li{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1d3b2e}
+#cart .empty{color:#7fa898;border:0}
+.total{display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem}
+.qrwrap{background:#fff;border-radius:12px;padding:10px;text-align:center;color:#0c1f17}
+canvas{width:100%;max-width:170px;image-rendering:pixelated;display:block;margin:0 auto}
+.qrwrap p{margin:6px 0 0;font-size:.8rem}
+.btns{display:flex;gap:8px}
+button.act{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:10px;border-radius:10px;font-weight:700;cursor:pointer;background:var(--green);color:#fff}
+button.act.alt{background:transparent;border:1.5px solid #3b6b58;color:#9fe0c3}
+button.act:focus-visible{outline:2px solid #fff}
+#msg{font-size:.85rem;color:#9fe0c3;min-height:1.2em;text-align:center}
+.slot{margin:12px auto 0;width:60%;height:34px;border-radius:8px;background:#e1e7e4;box-shadow:inset 0 6px 10px rgba(0,0,0,.2);text-align:center;line-height:34px;font-size:.8rem;color:#6a8077}
+@media (max-width:720px){.body{grid-template-columns:1fr}.shelf{grid-template-columns:repeat(3,1fr)}.logo{font-size:1.8rem}}
+</style>
+</head>
+<body>
+<div class="students" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<main class="kiosk">
+  <div class="top">
+    <div class="logo">Nestly</div>
+    <div class="tag">Everything You Need, Right on Campus</div>
+  </div>
+  <div class="body">
+    <div class="glass" id="shelves" role="group" aria-label="Products"></div>
+    <aside class="panel">
+      <h2>Your basket</h2>
+      <ul id="cart"></ul>
+      <div class="total"><span>Total</span><span id="total">₹0</span></div>
+      <div class="qrwrap">
+        <canvas id="qr" width="210" height="210" aria-label="UPI payment QR code"></canvas>
+        <p>Scan with any UPI app to pay</p>
+      </div>
+      <div id="msg" role="status"></div>
+      <div class="btns">
+        <button class="act" id="pay">Confirm payment</button>
+        <button class="act alt" id="clear">Clear</button>
+      </div>
+    </aside>
+  </div>
+  <div class="slot" id="slot">Collect your items here</div>
+</main>
+<script>
+var shelves=[
+[["🧮","Scientific calculator",649],["📓","Spiral notebook",85],["🖊️","Gel pens (5)",60],["🔌","Charging cable",199]],
+[["🍪","Biscuits",30],["🥜","Trail mix",55],["🍫","Chocolate bar",50],["🧃","Fruit juice",40]],
+[["🧴","Hand sanitizer",70],["🧼","Soap bar",35],["🪥","Toothbrush",45],["🧻","Tissue pack",25]]];
+var cart={};
+var sh=document.getElementById("shelves");
+shelves.forEach(function(row){
+  var d=document.createElement("div");d.className="shelf";
+  row.forEach(function(p){
+    var b=document.createElement("button");b.className="item";
+    b.innerHTML="<b>"+p[0]+"</b>"+p[1]+"<br><span>₹"+p[2]+"</span>";
+    b.onclick=function(){cart[p[1]]=cart[p[1]]||{q:0,p:p[2]};cart[p[1]].q++;render("")};
+    d.appendChild(b);
+  });
+  sh.appendChild(d);
+});
+function render(m){
+  var ul=document.getElementById("cart"),t=0,k=Object.keys(cart);
+  ul.innerHTML=k.length?"":"<li class='empty'>Tap an item to add it.</li>";
+  k.forEach(function(n){var c=cart[n];t+=c.q*c.p;var li=document.createElement("li");li.innerHTML="<span>"+c.q+" × "+n+"</span><span>₹"+c.q*c.p+"</span>";ul.appendChild(li)});
+  document.getElementById("total").textContent="₹"+t;
+  document.getElementById("msg").textContent=m;
+  drawQR(t);
+}
+function drawQR(seed){
+  var c=document.getElementById("qr"),x=c.getContext("2d"),n=21,s=10;
+  x.fillStyle="#fff";x.fillRect(0,0,210,210);x.fillStyle="#0c1f17";
+  var r=seed*9301+49297;
+  function rnd(){r=(r*9301+49297)%233280;return r/233280}
+  for(var i=0;i<n;i++)for(var j=0;j<n;j++){
+    var f=(i<8&&j<8)||(i<8&&j>12)||(i>12&&j<8);
+    if(!f&&rnd()>.5)x.fillRect(j*s,i*s,s,s);
+  }
+  [[0,0],[0,14],[14,0]].forEach(function(o){
+    var X=o[1]*s,Y=o[0]*s;
+    x.fillStyle="#0c1f17";x.fillRect(X,Y,70,70);
+    x.fillStyle="#fff";x.fillRect(X+10,Y+10,50,50);
+    x.fillStyle="#0c1f17";x.fillRect(X+20,Y+20,30,30);
+  });
+}
+document.getElementById("clear").onclick=function(){cart={};render("")};
+document.getElementById("pay").onclick=function(){
+  if(!Object.keys(cart).length){render("Add an item first.");return}
+  cart={};render("Payment received. Collect your items below.");
+  var s=document.getElementById("slot");s.textContent="Dispensing…";
+  setTimeout(function(){s.textContent="Collect your items here"},2000);
+};
+render("");
+</script>
+</body>
+</html>
